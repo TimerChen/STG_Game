@@ -1,0 +1,7 @@
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/install.dir
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/list_install_components.dir
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/rebuild_cache.dir
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/STG_Game.dir
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/edit_cache.dir
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/install/strip.dir
+/home/timemachine/Desktop/STG_Game/build/CMakeFiles/install/local.dir

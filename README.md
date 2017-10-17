@@ -8,6 +8,7 @@ include/SDL_Header.h
 
 res/
 
+<<<<<<< HEAD
 > You *needn't* pay attention to these files:
 >
 > include/res_path.h

@@ -24,10 +24,12 @@
 #include "cleanup.h"
 #include "res_path.h"
 
+namespace Game {
+
 
 
 #define KEY_SPACE  SDLK_SPACE
-#define KEY_ENTER  SDLK_KP_ENTER
+#define KEY_ENTER  SDLK_RETURN
 #define KEY_RETURN SDLK_RETURN
 #define KEY_TAB    SDLK_TAB
 #define KEY_ESC    SDLK_ESCAPE
@@ -44,8 +46,11 @@
 SDL_Renderer	*renderer	= NULL;
 SDL_Window		*window		= NULL;
 
-bool mousePressed = false;
-bool mouseDragged = false;
+bool FPS_DISPLAY	= false;
+double nowFPS;
+
+bool mousePressed	= false;
+bool mouseDragged	= false;
 uint8_t mouseButton;
 int mouseX = 0;
 int mouseY = 0;
@@ -71,7 +76,7 @@ extern void close();
 //Screen attributes
 const int SCREEN_WIDTH  = 640;
 const int SCREEN_HEIGHT = 480;
-std::string	fontName = "msyh.ttf";
+std::string	fontName = "msyh";
 int			fontSize = 25;
 
 /*
@@ -104,8 +109,13 @@ SDL_Texture* loadTexture(const std::string &file, SDL_Renderer *ren){
  * @param clip The sub-section of the texture to draw (clipping rect)
  *		default of nullptr draws the entire texture
  */
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst, SDL_Rect *clip = nullptr){
-	SDL_RenderCopy(ren, tex, clip, &dst);
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
+				   const double &angle = 0, const SDL_Point *center = NULL,
+				   const SDL_RendererFlip &flip = SDL_FLIP_NONE,
+				   const SDL_Rect *clip = nullptr)
+{
+	//SDL_RenderCopy(ren, tex, clip, &dst);
+	SDL_RenderCopyEx(ren, tex, clip, &dst, angle, center, flip );
 }
 /*
  * Draw an SDL_Texture to an SDL_Renderer at position x, y, preserving
@@ -118,18 +128,21 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst, SDL_Rect *
  * @param clip The sub-section of the texture to draw (clipping rect)
  *		default of nullptr draws the entire texture
  */
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y, SDL_Rect *clip = nullptr){
+void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
+				   const double &angle = 0, const SDL_Point *center = NULL,
+				   const SDL_RendererFlip &flip = SDL_FLIP_NONE,
+				   const SDL_Rect *clip = nullptr){
 	SDL_Rect dst;
 	dst.x = x;
 	dst.y = y;
 	if (clip != nullptr){
 		dst.w = clip->w;
 		dst.h = clip->h;
-	}
-	else {
+	}else
+	{
 		SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
 	}
-	renderTexture(tex, ren, dst, clip);
+	renderTexture(tex, ren, dst, angle, center, flip, clip);
 }
 /*
  * Render the message we want to display to a texture for drawing
@@ -168,30 +181,81 @@ SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
 
 // ----------- Functions for users ---------------
 
+
+
+#define Image		SDL_Texture
+#define Color		SDL_Color
+#define Rect		SDL_Rect
+#define Point		SDL_Point
+#define FlipType	SDL_RendererFlip
+
+#define FLIP_NONE		SDL_FLIP_NONE			/**< Do not flip */
+#define FLIP_HORIZONTAL SDL_FLIP_HORIZONTAL		/**< flip horizontally */
+#define FLIP_VERTICAL	SDL_FLIP_VERTICAL		/**< flip vertically */
+
+Image* textToImage( const std::string &msg,
+					const int32_t &size = fontSize, const Color &color = {255,255,255},
+					const std::string &fontType = fontName)
+{
+	return renderText(msg, RES_PATH_FONT + fontName + ".ttf", color, size, renderer);
+}
+
+
 /*
- * Draw text on the screen.
- * @param msg The message we want to display
+ * Loads an image
+ * @param file The image file to load
+ * @return the loaded image, or nullptr if something went wrong.
+ */
+Image* loadImage( const std::string &file )
+{
+	return loadTexture( file, renderer );
+}
+
+
+/*
+ * Draw image on the screen.
+ * @param img The image we want to display
  * @param x The x coordinate to draw too
  * @param y The y coordinate to draw too
- * @param fontSize The font we want to use to render the text
- * @param color The color we want the text to be
- * @param fontSize The size we want the font to be
+ * \param angle		An angle in degrees that indicates the rotation that will be applied to dstrect, rotating it in a clockwise direction
+ * \param center	A pointer to a point indicating the point around which dstrect will be rotated
+ *					(if NULL, rotation will be done around dstrect.w/2, dstrect.h/2).
+ * \param flip		An SDL_RendererFlip value stating which flipping actions should be performed on the texture
+ * @param clip		The subsection of the picture to display.
  * @return NULL
  */
+void drawImage(Image *img, const int &x, const int &y,
+			   const double &angle = 0, const Point *center = NULL,
+			   const FlipType &flip = SDL_FLIP_NONE,
+			   const Rect *clip = nullptr)
+{
+	SDL_Renderer *ren = renderer;
+	renderTexture( img, ren, x, y, angle, center, flip, clip );
+}
+
+void getImageSize( Image *img, int &width, int &height )
+{
+	SDL_QueryTexture( img, NULL, NULL, &width, &height );
+}
 
 void drawText( const std::string &msg, const int &x, const int &y,
-			   const int32_t &size = fontSize, const SDL_Color &color = { 255, 255, 255 } )
+			   const int32_t &size = fontSize, const Color &color = { 255, 255, 255 } )
 {
-	SDL_Texture *image = renderText(msg, RES_PATH_FONT + fontName, color, size, renderer);
+	Image *image = textToImage(msg, size, color);
 
 	//Get the texture w/h so we can center it in the screen
 	int iW, iH;
-	SDL_QueryTexture(image, NULL, NULL, &iW, &iH);
-	renderTexture(image, renderer, x, y);
+	getImageSize(image, iW, iH);
+	drawImage(image, x, y);
 	cleanup(image);
 }
 
+
+}
+
 int main(int argc, char* args[]) {
+
+	using namespace Game;
 
 	//Start up SDL and make sure it went ok
 	if (SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -308,19 +372,26 @@ int main(int argc, char* args[]) {
 		}
 		duration = duration + deltaTime;
 
-		double fps = 1.0 / deltaTime;
-		char info[20];
-		sprintf(info, "FPS: %2d", (int)(fps + 0.5));
+
+		//Display Fps
+		nowFPS = 1.0 / deltaTime;
+		if( FPS_DISPLAY )
+		{
+			char info[20];
+			sprintf(info, "FPS: %2d", (int)(nowFPS + 0.5));
+			drawText( info, 0, 0 );
+		}
 
 
-
-		drawText( info, 0, 0 );
 
 
 
 		//We can draw our message as we do any other texture, since it's been
 		//rendered to a texture
 
+		//SDL_Rect rect = {0,0,SCREEN_WIDTH/2,SCREEN_HEIGHT/2};
+		//SDL_RenderSetViewport( renderer, &rect );
+		//SDL_RenderSetScale( renderer, 1.1,0.9 );
 		SDL_RenderPresent(renderer);
 		SDL_RenderClear(renderer);
 	}

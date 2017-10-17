@@ -2,6 +2,10 @@
 
 #include <cstdio>
 
+namespace Game {
+
+
+
 bool keyboard[1000];
 //int main(){}
 void initialize()
@@ -76,5 +80,7 @@ void keyUp()
 
 void close()
 {
+
+}
 
 }

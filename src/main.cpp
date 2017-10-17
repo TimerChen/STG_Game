@@ -1,16 +1,17 @@
 #include "SDL2_header.h"
 
 #include <cstdio>
+#include <map>
 
 namespace Game {
 
 
 
-bool keyboard[1000];
+std::map<int, bool> keyboard;
 //int main(){}
 void initialize()
 {
-
+	FPS_DISPLAY = true;
 }
 
 uint32_t menuIndex = 0;
@@ -36,10 +37,36 @@ void draw()
 
 	drawText( "♥", SCREEN_WIDTH/2-30 +ox, SCREEN_HEIGHT/2+addition +oy ,fontSize, {255,0,0} );
 }
-
-void work(const double &duration)
+double coolTime = 0;
+int lastMove=-1;
+void deal()
 {
+	bool change = 0;
+	if( coolTime < duration )
+	{
+		lastMove = -1;
+	}
+	if(lastMove != KEY_UP && keyboard[KEY_UP])
+	{
+		menuIndex = (menuIndex-1+3)%3;
+		lastMove = KEY_UP;
+		change = 1;
+	}
+	if(lastMove != KEY_DOWN && keyboard[KEY_DOWN])
+	{
+		menuIndex = (menuIndex+1+3)%3;
+		lastMove = KEY_DOWN;
+		change = 1;
+	}
+	if(change)
+	{
+		coolTime = duration + 0.1;
+	}
+}
 
+void work()
+{
+	deal();
 	draw();
 }
 
@@ -59,23 +86,12 @@ void mouseRelease()
 
 void keyDown()
 {
-	if(keyValue == SDLK_UP)
-		menuIndex = (menuIndex+3-1)%3;
-	if(keyValue == SDLK_DOWN)
-		menuIndex = (menuIndex+3+1)%3;
-	return ;
-	std::cout << keyValue << std::endl;
-	if(keyValue >= 0)
 	keyboard[keyValue] = true;
 }
 
 void keyUp()
 {
-	return ;
-	std::cout << keyValue << std::endl;
-	if(keyValue >= 0)
 	keyboard[keyValue] = false;
-
 }
 
 void close()

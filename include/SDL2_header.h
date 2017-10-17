@@ -48,6 +48,7 @@ SDL_Window		*window		= NULL;
 
 bool FPS_DISPLAY	= false;
 double nowFPS;
+double duration;
 
 bool mousePressed	= false;
 bool mouseDragged	= false;
@@ -65,7 +66,7 @@ const std::string RES_PATH_FONT = getResourcePath("fonts");
 
 // Functions for programming
 extern void initialize();
-extern void work(const double&);
+extern void work();
 extern void mousePress();
 extern void mouseMove();
 extern void mouseRelease();
@@ -294,7 +295,7 @@ int main(int argc, char* args[]) {
 	//Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 );
 
 
-	double deltaTime, delta, duration, oneStepTime = 1./FPS_RATE;
+	double deltaTime, delta, oneStepTime = 1./FPS_RATE;
 	unsigned int t0, t1;
 	SDL_Event event;
 	bool quit = false;
@@ -318,6 +319,7 @@ int main(int argc, char* args[]) {
 					keyDown();
 					break;
 				case SDL_KEYUP:
+					keyValue = event.key.keysym.sym;
 					keyPressed = false;
 					keyUp();
 					break;
@@ -359,7 +361,7 @@ int main(int argc, char* args[]) {
 
 		//internalRender(duration);
 
-		work(duration);
+		work();
 
 		t1 = SDL_GetTicks();
 		delta = t1 - t0;

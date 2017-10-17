@@ -36,6 +36,21 @@ void draw()
 	uint32_t addition = menuIndex*30;
 
 	drawText( "♥", SCREEN_WIDTH/2-30 +ox, SCREEN_HEIGHT/2+addition +oy ,fontSize, {255,0,0} );
+
+
+
+	setPenColor({0,255,0,255});
+	Rect rect = {0,0,75,100};
+	//drawRect(&rect,true);
+
+	rect = {30,30,75-20,100-20};
+	setPenColor({0,0,0,175});
+	rect = {SCREEN_WIDTH/2-165, SCREEN_HEIGHT/2-110+27,200,100-20};
+
+	drawRect(rect,true);
+
+	setPenColor({0,255,0});
+	drawLine(rand()%SCREEN_WIDTH,rand()%SCREEN_HEIGHT,rand()%SCREEN_WIDTH,rand()%SCREEN_HEIGHT);
 }
 double coolTime = 0;
 int lastMove=-1;
@@ -51,17 +66,22 @@ void deal()
 		menuIndex = (menuIndex-1+3)%3;
 		lastMove = KEY_UP;
 		change = 1;
+		setCanvas(-10,rand()%20-10);
 	}
 	if(lastMove != KEY_DOWN && keyboard[KEY_DOWN])
 	{
 		menuIndex = (menuIndex+1+3)%3;
 		lastMove = KEY_DOWN;
 		change = 1;
+		setCanvas(+10,rand()%20-10);
 	}
 	if(change)
 	{
 		coolTime = duration + 0.1;
-	}
+
+	}else
+		setCanvas(0,0);
+
 }
 
 void work()

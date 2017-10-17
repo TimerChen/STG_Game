@@ -239,6 +239,52 @@ void getImageSize( Image *img, int &width, int &height )
 	SDL_QueryTexture( img, NULL, NULL, &width, &height );
 }
 
+uint8_t lastColor[4];
+
+void setPenColor( const uint8_t &r, const uint8_t &g, const uint8_t &b, const uint8_t &a)
+{
+	lastColor[0] = r;
+	lastColor[1] = g;
+	lastColor[2] = b;
+	lastColor[3] = a;
+	SDL_SetRenderDrawColor( renderer, r, g, b, a );
+}
+void setPenColor( const Color &color )
+{
+	setPenColor( color.r, color.g, color.b, color.a );
+}
+
+void drawPoint( int x, int y )
+{
+	SDL_RenderDrawPoint( renderer, x, y );
+}
+void drawPoint( const Point& p )
+{
+	drawPoint( p.x, p.y );
+}
+
+void drawLine( int x1, int y1, int x2, int y2 )
+{
+	SDL_RenderDrawLine( renderer, x1, y1, x2, y2 );
+}
+void drawLine( const Point &p1 ,const Point &p2 )
+{
+	drawLine( p1.x, p1.y, p2.x, p2.y );
+}
+
+void drawLines(const SDL_Point* points, int count)
+{
+	SDL_RenderDrawLines( renderer, points, count );
+}
+
+void drawRect( const Rect& rect, const bool& fill = false )
+{
+	if( !fill )
+		SDL_RenderDrawRect( renderer, &rect );
+	else
+		SDL_RenderFillRect( renderer, &rect );
+}
+
 void drawText( const std::string &msg, const int &x, const int &y,
 			   const int32_t &size = fontSize, const Color &color = { 255, 255, 255 } )
 {
@@ -249,6 +295,12 @@ void drawText( const std::string &msg, const int &x, const int &y,
 	getImageSize(image, iW, iH);
 	drawImage(image, x, y);
 	cleanup(image);
+}
+
+void setCanvas( int x, int y, int width=SCREEN_WIDTH, int height=SCREEN_HEIGHT )
+{
+	SDL_Rect rect = {x,y,x+width,y+height};
+	SDL_RenderSetViewport( renderer, &rect );
 }
 
 
@@ -302,6 +354,7 @@ int main(int argc, char* args[]) {
 
 
 	t0 = SDL_GetTicks();
+	SDL_SetRenderDrawBlendMode( renderer, SDL_BLENDMODE_BLEND );
 	initialize();
 	while( !quit )
 	{
@@ -390,11 +443,10 @@ int main(int argc, char* args[]) {
 
 		//We can draw our message as we do any other texture, since it's been
 		//rendered to a texture
-
-		//SDL_Rect rect = {0,0,SCREEN_WIDTH/2,SCREEN_HEIGHT/2};
-		//SDL_RenderSetViewport( renderer, &rect );
 		//SDL_RenderSetScale( renderer, 1.1,0.9 );
+		setPenColor({0,0,0});
 		SDL_RenderPresent(renderer);
+		setPenColor(lastColor[0],lastColor[1],lastColor[2],lastColor[3]);
 		SDL_RenderClear(renderer);
 	}
 

@@ -37,7 +37,10 @@ find_package(SDL2_ttf REQUIRED)
 include_directories(${SDL2_TTF_INCLUDE_DIR})
 
 
-set(SOURCE_FILES src/main.cpp include/SDL2_header.h)
+set(SOURCE_FILES
+    include/res_path.h      include/cleanup.h
+    include/SDL2_header.h
+    src/main.cpp )
 
 if (NOT ${PROJECT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
         file(COPY "${PROJECT_SOURCE_DIR}/res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

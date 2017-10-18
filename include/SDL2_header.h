@@ -12,9 +12,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
-//#include <SDL2/SDL_mixer.h>
-//#include <SDL2/SDL_thread.h>
-#include <iconv.h>
 
 #include <iostream>
 #include <cmath>
@@ -28,15 +25,15 @@ namespace Game {
 
 
 
-#define KEY_SPACE  SDLK_SPACE
-#define KEY_ENTER  SDLK_RETURN
-#define KEY_RETURN SDLK_RETURN
-#define KEY_TAB    SDLK_TAB
-#define KEY_ESC    SDLK_ESCAPE
-#define KEY_UP    SDLK_UP
-#define KEY_DOWN  SDLK_DOWN
-#define KEY_LEFT  SDLK_LEFT
-#define KEY_RIGHT SDLK_RIGHT
+#define KEY_SPACE	SDLK_SPACE
+#define KEY_ENTER	SDLK_RETURN
+#define KEY_RETURN	SDLK_RETURN
+#define KEY_TAB		SDLK_TAB
+#define KEY_ESC		SDLK_ESCAPE
+#define KEY_UP		SDLK_UP
+#define KEY_DOWN	SDLK_DOWN
+#define KEY_LEFT	SDLK_LEFT
+#define KEY_RIGHT	SDLK_RIGHT
 
 #define MOUSE_LEFT   SDL_BUTTON_LEFT
 #define MOUSE_MIDDLE SDL_BUTTON_MIDDLE
@@ -58,25 +55,25 @@ int mouseY = 0;
 int pmouseX = -1;
 int pmouseY = -1;
 bool keyPressed = false;
-SDL_Keycode keyValue;
+int keyValue;
 
 const unsigned int FPS_RATE = 60;
-const std::string RES_PATH_IMG = getResourcePath("image");
+const std::string RES_PATH_IMG	= getResourcePath("image");
 const std::string RES_PATH_FONT = getResourcePath("fonts");
 
 // Functions for programming
 extern void initialize();
-extern void work();
+extern int	work( bool & );
 extern void mousePress();
 extern void mouseMove();
 extern void mouseRelease();
 extern void keyDown();
 extern void keyUp();
-extern void close();
+extern void finale();
 
 //Screen attributes
-const int SCREEN_WIDTH  = 640;
-const int SCREEN_HEIGHT = 480;
+extern const int SCREEN_WIDTH;
+extern const int SCREEN_HEIGHT;
 std::string	fontName = "msyh";
 int			fontSize = 25;
 
@@ -115,7 +112,6 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
 				   const SDL_RendererFlip &flip = SDL_FLIP_NONE,
 				   const SDL_Rect *clip = nullptr)
 {
-	//SDL_RenderCopy(ren, tex, clip, &dst);
 	SDL_RenderCopyEx(ren, tex, clip, &dst, angle, center, flip );
 }
 /*
@@ -130,6 +126,7 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, SDL_Rect dst,
  *		default of nullptr draws the entire texture
  */
 void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
+				   const double &widthRate = 1,	const double &heightRate = 1,
 				   const double &angle = 0, const SDL_Point *center = NULL,
 				   const SDL_RendererFlip &flip = SDL_FLIP_NONE,
 				   const SDL_Rect *clip = nullptr){
@@ -137,11 +134,13 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y,
 	dst.x = x;
 	dst.y = y;
 	if (clip != nullptr){
-		dst.w = clip->w;
-		dst.h = clip->h;
+		dst.w = clip->w*widthRate;
+		dst.h = clip->h*heightRate;
 	}else
 	{
 		SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
+		dst.w *= widthRate;
+		dst.h *= heightRate;
 	}
 	renderTexture(tex, ren, dst, angle, center, flip, clip);
 }
@@ -226,12 +225,13 @@ Image* loadImage( const std::string &file )
  * @return NULL
  */
 void drawImage(Image *img, const int &x, const int &y,
+			   const double &widthRate = 1,	const double &heightRate = 1,
 			   const double &angle = 0, const Point *center = NULL,
 			   const FlipType &flip = SDL_FLIP_NONE,
 			   const Rect *clip = nullptr)
 {
 	SDL_Renderer *ren = renderer;
-	renderTexture( img, ren, x, y, angle, center, flip, clip );
+	renderTexture( img, ren, x, y, widthRate, heightRate, angle, center, flip, clip );
 }
 
 void getImageSize( Image *img, int &width, int &height )
@@ -310,6 +310,7 @@ int main(int argc, char* args[]) {
 
 	using namespace Game;
 
+
 	//Start up SDL and make sure it went ok
 	if (SDL_Init(SDL_INIT_VIDEO) != 0){
 		logSDLError(std::cout, "SDL_Init");
@@ -323,7 +324,7 @@ int main(int argc, char* args[]) {
 		return 1;
 	}
 
-	//return 0;
+	initialize();
 
 	//Setup our window and renderer
 	window = SDL_CreateWindow("STG_Game", SDL_WINDOWPOS_CENTERED,
@@ -349,13 +350,13 @@ int main(int argc, char* args[]) {
 
 	double deltaTime, delta, oneStepTime = 1./FPS_RATE;
 	unsigned int t0, t1;
+	int returnValue;
 	SDL_Event event;
 	bool quit = false;
 
 
 	t0 = SDL_GetTicks();
 	SDL_SetRenderDrawBlendMode( renderer, SDL_BLENDMODE_BLEND );
-	initialize();
 	while( !quit )
 	{
 
@@ -411,10 +412,7 @@ int main(int argc, char* args[]) {
 			}
 		}
 
-
-		//internalRender(duration);
-
-		work();
+		returnValue = work( quit );
 
 		t1 = SDL_GetTicks();
 		delta = t1 - t0;
@@ -437,13 +435,7 @@ int main(int argc, char* args[]) {
 			drawText( info, 0, 0 );
 		}
 
-
-
-
-
-		//We can draw our message as we do any other texture, since it's been
-		//rendered to a texture
-		//SDL_RenderSetScale( renderer, 1.1,0.9 );
+		//Draw the renderer
 		setPenColor({0,0,0});
 		SDL_RenderPresent(renderer);
 		setPenColor(lastColor[0],lastColor[1],lastColor[2],lastColor[3]);
@@ -451,18 +443,7 @@ int main(int argc, char* args[]) {
 	}
 
 
-	close();
-
-	/*
-	if (_bgColor != NULL ) SDL_DestroyTexture(_bgColor);
-	if (_bgImage != NULL ) SDL_DestroyTexture(_bgImage);
-	if (_cursor != NULL) SDL_FreeCursor(_cursor);
-	if (_font != NULL) TTF_CloseFont( _font );
-	if (_bgMusic != NULL ) {
-		Mix_HaltMusic();
-		Mix_FreeMusic( _bgMusic );
-	}
-	*/
+	finale();
 
 	cleanup( window, renderer );
 
@@ -470,7 +451,7 @@ int main(int argc, char* args[]) {
 	TTF_Quit();
 	SDL_Quit();
 
-	return 0;
+	return returnValue;
 }
 
 

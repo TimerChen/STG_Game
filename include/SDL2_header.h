@@ -1,8 +1,7 @@
 /*
+ * Coded by Jingxiao Chen.
  *
- * Coded by Timer Chen.
  * Part of this code came from https://github.com/Twinklebear/TwinklebearDev-Lessons
- *
  *
  */
 
@@ -20,10 +19,20 @@
 
 #include "cleanup.h"
 #include "res_path.h"
+#include "pointd.hpp"
 
 namespace Game {
 
 
+#define Image		SDL_Texture
+#define Color		SDL_Color
+#define Rect		SDL_Rect
+#define Point		SDL_Point
+#define FlipType	SDL_RendererFlip
+
+#define FLIP_NONE		SDL_FLIP_NONE			/**< Do not flip */
+#define FLIP_HORIZONTAL SDL_FLIP_HORIZONTAL		/**< flip horizontally */
+#define FLIP_VERTICAL	SDL_FLIP_VERTICAL		/**< flip vertically */
 
 #define KEY_SPACE	SDLK_SPACE
 #define KEY_ENTER	SDLK_RETURN
@@ -46,6 +55,7 @@ SDL_Window		*window		= NULL;
 bool FPS_DISPLAY	= false;
 double nowFPS;
 double duration;
+Color canvasColor = {0, 0, 0, 255};
 
 bool mousePressed	= false;
 bool mouseDragged	= false;
@@ -74,6 +84,8 @@ extern void finale();
 //Screen attributes
 extern const int SCREEN_WIDTH;
 extern const int SCREEN_HEIGHT;
+extern const std::string TitleName;
+
 std::string	fontName = "msyh";
 int			fontSize = 25;
 
@@ -182,22 +194,11 @@ SDL_Texture* renderText(const std::string &message, const std::string &fontFile,
 // ----------- Functions for users ---------------
 
 
-
-#define Image		SDL_Texture
-#define Color		SDL_Color
-#define Rect		SDL_Rect
-#define Point		SDL_Point
-#define FlipType	SDL_RendererFlip
-
-#define FLIP_NONE		SDL_FLIP_NONE			/**< Do not flip */
-#define FLIP_HORIZONTAL SDL_FLIP_HORIZONTAL		/**< flip horizontally */
-#define FLIP_VERTICAL	SDL_FLIP_VERTICAL		/**< flip vertically */
-
 Image* textToImage( const std::string &msg,
-					const int32_t &size = fontSize, const Color &color = {255,255,255},
+					const int32_t &size = fontSize, const Color &color = {255, 255, 255, 255},
 					const std::string &fontType = fontName)
 {
-	return renderText(msg, RES_PATH_FONT + fontName + ".ttf", color, size, renderer);
+	return renderText(msg, RES_PATH_FONT + fontType + ".ttf", color, size, renderer);
 }
 
 
@@ -208,9 +209,13 @@ Image* textToImage( const std::string &msg,
  */
 Image* loadImage( const std::string &file )
 {
-	return loadTexture( file, renderer );
+	return loadTexture( RES_PATH_IMG +file, renderer );
 }
 
+void setImageAlpha( Image *img, Uint8 alpha )
+{
+	SDL_SetTextureAlphaMod( img, alpha );
+}
 
 /*
  * Draw image on the screen.
@@ -224,10 +229,10 @@ Image* loadImage( const std::string &file )
  * @param clip		The subsection of the picture to display.
  * @return NULL
  */
-void drawImage(Image *img, const int &x, const int &y,
+void drawImage(Image *img, int x, int y,
 			   const double &widthRate = 1,	const double &heightRate = 1,
 			   const double &angle = 0, const Point *center = NULL,
-			   const FlipType &flip = SDL_FLIP_NONE,
+			   const FlipType &flip = FLIP_NONE,
 			   const Rect *clip = nullptr)
 {
 	SDL_Renderer *ren = renderer;
@@ -285,8 +290,18 @@ void drawRect( const Rect& rect, const bool& fill = false )
 		SDL_RenderFillRect( renderer, &rect );
 }
 
+
+
+void setCanvas( int x, int y, int width=SCREEN_WIDTH, int height=SCREEN_HEIGHT )
+{
+	SDL_Rect rect = {x,y,x+width,y+height};
+	SDL_RenderSetViewport( renderer, &rect );
+}
+
+// ---------------------------------------------------
+
 void drawText( const std::string &msg, const int &x, const int &y,
-			   const int32_t &size = fontSize, const Color &color = { 255, 255, 255 } )
+			   const int32_t &size = fontSize, const Color &color = { 255, 255, 255, 255 } )
 {
 	Image *image = textToImage(msg, size, color);
 
@@ -296,13 +311,6 @@ void drawText( const std::string &msg, const int &x, const int &y,
 	drawImage(image, x, y);
 	cleanup(image);
 }
-
-void setCanvas( int x, int y, int width=SCREEN_WIDTH, int height=SCREEN_HEIGHT )
-{
-	SDL_Rect rect = {x,y,x+width,y+height};
-	SDL_RenderSetViewport( renderer, &rect );
-}
-
 
 }
 
@@ -324,10 +332,9 @@ int main(int argc, char* args[]) {
 		return 1;
 	}
 
-	initialize();
 
 	//Setup our window and renderer
-	window = SDL_CreateWindow("STG_Game", SDL_WINDOWPOS_CENTERED,
+	window = SDL_CreateWindow(TitleName.c_str(), SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
 	if (window == nullptr){
 		logSDLError(std::cout, "CreateWindow");
@@ -343,10 +350,8 @@ int main(int argc, char* args[]) {
 		SDL_Quit();
 		return 1;
 	}
-	//_font = TTF_OpenFont(_fontName, _fontSize);
 
-	//Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 );
-
+	initialize();
 
 	double deltaTime, delta, oneStepTime = 1./FPS_RATE;
 	unsigned int t0, t1;
@@ -436,7 +441,7 @@ int main(int argc, char* args[]) {
 		}
 
 		//Draw the renderer
-		setPenColor({0,0,0});
+		setPenColor(canvasColor);
 		SDL_RenderPresent(renderer);
 		setPenColor(lastColor[0],lastColor[1],lastColor[2],lastColor[3]);
 		SDL_RenderClear(renderer);

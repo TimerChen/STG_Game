@@ -5,10 +5,9 @@
 
 namespace Game {
 
-
+const std::string TitleName = "Not A Simple Game Deemo";
 const int SCREEN_WIDTH	= 640;
 const int SCREEN_HEIGHT	= 480;
-const std::string TitleName = "A Simple Game Deemo";
 
 std::map<int, bool> keyboard;
 
@@ -16,31 +15,27 @@ std::map<int, bool> keyboard;
 
 PointD posPlayer, velocityPlayer;
 PointD posEnemy[10];
-int enemyNumber, imageNumber;
 double speedPlayer;
 
 Image *imagePlayer, *imageBullet, *imageEnemy, *images[100];
 
 void loadPictures()
 {
-	imagePlayer = loadImage( "player.png"	);
-	imageBullet = loadImage( "bullet.png"	);
-	imageEnemy	= loadImage( "player_u.png" );
+	imagePlayer = loadImage( "player.png" );
+	imageBullet = loadImage( "bullet.png" );
+	imageEnemy	= loadImage( "enemy.png"  );
+
 }
 
 void initialize()
 {
-	//Display FPS
 	FPS_DISPLAY = true;
 
-	//Initialize vairables
 	posPlayer = PointD( SCREEN_WIDTH/2, SCREEN_HEIGHT/2 );
 	posEnemy[0] = posPlayer;
-	enemyNumber = 1;
 	speedPlayer = 5;
 	canvasColor = {0, 0, 0, 255};
 
-	//Load pictures from files
 	loadPictures();
 }
 
@@ -48,37 +43,47 @@ void drawPlayer()
 {
 	int w,h;
 	getImageSize( imagePlayer, w, h );
-	drawImage( imagePlayer, posPlayer.x-w/2, posPlayer.y-h/2 );
+	setImageAlpha( imagePlayer, 150);
+	drawImage( imagePlayer, posPlayer.x-w/2, posPlayer.y-h/2, 0.5, 0.5 );
 }
 void drawBackground()
 {
 	Rect rect = {70, 50, 80, 90};
-
-	//	Pay attention:
-	//		(Color){255,255,0} means (Color){255,255,0,0}
-	//		and means you will draw nothing
 	setPenColor((Color){255, 255, 0, 255});
 
+	//	Pay attention: (Color){255,255,0} means (Color){255,255,0,0}
+	//	and means you will draw nothing
 
 	drawRect( rect, true );
 
 }
+void drawForeground()
+{
+	Rect rect = {200, 176, 85, 100};
+	setPenColor((Color){0, 255, 0, 200});
+
+	drawRect( rect, true );
+}
 void drawHint()
 {
-	Image *text = textToImage( "< This is a simple game demo. >" );
+	Image *text = textToImage( "< This is not a simple game demo. >");
 	int w,h;
 	getImageSize( text, w, h );
-	drawImage( text, SCREEN_WIDTH/2-w/2, SCREEN_HEIGHT-h );
+	drawImage( text, SCREEN_WIDTH-h/2-w/2, SCREEN_HEIGHT/2-h/2, 1, 1, 90+180 );
 }
 void drawBullet()
 {
 
 }
+int lastAnime = 0;
 void drawEnemy()
 {
 	int w,h;
 	getImageSize( imageEnemy, w, h );
-	drawImage( imageEnemy, posEnemy[0].x-w/2, posEnemy[0].y-h/2 );
+	lastAnime = (lastAnime+15)%(4*60);
+	Rect clip = {w/16*(lastAnime/60), 0, w/16,h/16};
+	setImageAlpha( imageEnemy, 255 );
+	drawImage( imageEnemy, posEnemy[0].x, posEnemy[0].y, 2, 2, 0, NULL, FLIP_NONE, &clip );
 }
 
 void draw()
@@ -87,12 +92,12 @@ void draw()
 	drawPlayer();
 	drawBullet();
 	drawEnemy();
+	drawForeground();
 	drawHint();
 }
 void deal()
 {
 	bool move = false;
-	//Calculate velocity
 	if( keyboard[KEY_UP]	|| keyboard['w'] )
 	{
 		velocityPlayer = velocityPlayer + PointD(0,-1)*speedPlayer;
@@ -114,31 +119,25 @@ void deal()
 		move = true;
 	}
 
-	//Limit player's speed
 	double len = velocityPlayer.length();
 	if( len > speedPlayer )
 	{
 		velocityPlayer = velocityPlayer/len*speedPlayer;
 	}
-
-	//Calculate new position
 	posPlayer = posPlayer + velocityPlayer;
-
-	//Stop player
 	if(!move)
 	{
 		velocityPlayer = velocityPlayer * 0.8;
 		if( velocityPlayer.length() < 0.1 )
 			velocityPlayer = PointD();
 	}
+
+	posEnemy[0] = PointD( mouseX, mouseY );
 }
 
 int work( bool &quit )
 {
-	//Calculate sth.
 	deal();
-
-	//Draw on the screen
 	draw();
 
 	if( keyboard[KEY_ESC] )
@@ -172,9 +171,8 @@ void keyUp()
 
 void finale()
 {
-	//Delete all images
 	cleanup( imagePlayer, imageBullet, imageEnemy );
-	for( int i = 0; i < imageNumber; ++i )
+	for( int i = 0; i < 100; ++i )
 		cleanup( images[i] );
 }
 

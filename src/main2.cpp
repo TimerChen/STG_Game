@@ -3,11 +3,13 @@
 #include <cstdio>
 #include <map>
 
-namespace Game {
 
-const std::string TitleName = "Not A Simple Game Deemo";
-const int SCREEN_WIDTH	= 640;
-const int SCREEN_HEIGHT	= 480;
+
+const std::string Game::TitleName = "Not A Simple Game Demo";
+const int Game::SCREEN_WIDTH	= 640;
+const int Game::SCREEN_HEIGHT	= 480;
+
+using namespace Game;
 
 std::map<int, bool> keyboard;
 
@@ -176,4 +178,4 @@ void finale()
 		cleanup( images[i] );
 }
 
-}
+

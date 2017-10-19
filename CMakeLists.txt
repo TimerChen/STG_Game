@@ -41,7 +41,7 @@ set(SOURCE_FILES
     include/res_path.h      include/cleanup.h
     include/SDL2_header.h
     include/pointd.hpp
-    src/main2.cpp )
+    src/main.cpp )
 
 if (NOT ${PROJECT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
         file(COPY "${PROJECT_SOURCE_DIR}/res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

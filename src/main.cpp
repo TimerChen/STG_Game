@@ -14,13 +14,29 @@ std::map<int, bool> keyboard;
 
 class Object
 {
-	PointD pos;
-
+public:
+	PointD pos, velocity;
 };
-class Creature : public Object
+class Bullet : public Object
 {
 
 };
+
+class Creature : public Object
+{
+public:
+	double hp;
+};
+
+class Enemy : public Creature
+{
+
+};
+class Player : public Creature
+{
+
+};
+
 
 
 PointD posPlayer, velocityPlayer;

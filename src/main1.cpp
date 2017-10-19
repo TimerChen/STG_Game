@@ -8,19 +8,10 @@ namespace Game {
 
 const int SCREEN_WIDTH	= 640;
 const int SCREEN_HEIGHT	= 480;
-const std::string TitleName = "A Simple Game Demo";
+const std::string TitleName = "A Simple Game Deemo";
 
 std::map<int, bool> keyboard;
 
-class Object
-{
-	PointD pos;
-
-};
-class Creature : public Object
-{
-
-};
 
 
 PointD posPlayer, velocityPlayer;

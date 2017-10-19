@@ -72,15 +72,6 @@ const unsigned int FPS_RATE = 60;
 const std::string RES_PATH_IMG	= getResourcePath("image");
 const std::string RES_PATH_FONT = getResourcePath("fonts");
 
-// Functions for programming
-extern void initialize();
-extern int	work( bool & );
-extern void mousePress();
-extern void mouseMove();
-extern void mouseRelease();
-extern void keyDown();
-extern void keyUp();
-extern void finale();
 
 //Screen attributes
 extern const int SCREEN_WIDTH;
@@ -314,6 +305,17 @@ void drawText( const std::string &msg, const int &x, const int &y,
 }
 
 }
+
+
+// Functions for programming
+extern void initialize();
+extern int	work( bool & );
+extern void mousePress();
+extern void mouseMove();
+extern void mouseRelease();
+extern void keyDown();
+extern void keyUp();
+extern void finale();
 
 int main(int argc, char* args[]) {
 

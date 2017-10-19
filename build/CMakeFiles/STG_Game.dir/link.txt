@@ -1,1 +1,0 @@
-/usr/bin/c++    -Wall -Wextra -pedantic -std=c++11   CMakeFiles/STG_Game.dir/src/main.cpp.o  -o bin/STG_Game -rdynamic /usr/local/lib/libSDL2main.a /usr/local/lib/libSDL2.so -lpthread /usr/local/lib/libSDL2_ttf.so -Wl,-rpath,/usr/local/lib: 

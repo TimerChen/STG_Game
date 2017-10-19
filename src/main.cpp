@@ -8,7 +8,7 @@ namespace Game {
 
 const int SCREEN_WIDTH	= 640;
 const int SCREEN_HEIGHT	= 480;
-const std::string TitleName = "A Simple Game Deemo";
+const std::string TitleName = "A Simple Game Demo";
 
 std::map<int, bool> keyboard;
 

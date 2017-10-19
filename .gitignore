@@ -33,3 +33,5 @@
 
 # Qt Creator
 *.user
+
+/build

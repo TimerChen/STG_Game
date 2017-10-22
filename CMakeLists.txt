@@ -39,8 +39,8 @@ include_directories(${SDL2_TTF_INCLUDE_DIR})
 
 set(SOURCE_FILES
     include/res_path.h      include/cleanup.h
-    include/SDL2_header.h
-    include/pointd.hpp
+    include/SDL2_header.h   src/SDL2_header.cpp
+    include/pointd.h
     src/main.cpp )
 
 if (NOT ${PROJECT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})

@@ -60,6 +60,8 @@ public:
 
 	double t()
 	{return left;}
+	double tMax()
+	{return cdMax;}
 
 	bool mv(double t=1./FPS_RATE)
 	{
@@ -117,6 +119,7 @@ public:
 class Player : public Creature
 {
 public:
+	CD mp, bombCD;
 	void update();
 	void draw();
 };
@@ -176,7 +179,10 @@ void Creature::hit( double damage )
 }
 void Enemy::update(const PointD &ae)
 {
-	velocity = velocity + ae*speed;
+	PointD a = ae;
+	a.x = 0;
+	if(velocity.length() < 1e-7)
+		velocity = velocity + a*maxSpeed;
 	move();
 	//ang = getAngle(ae, ang);
 }
@@ -211,6 +217,15 @@ void Player::update()
 		velocity = velocity + PointD(+1,0)*speed;
 		moved = true;
 	}
+	if( keyboard[KEY_LSHIFT] )
+	{
+		maxSpeed = 3;
+	}else
+	{
+		maxSpeed = 7;
+	}
+
+	bombCD.mv();
 
 	move();
 
@@ -230,6 +245,12 @@ void Player::draw()
 	//ang = getAngle(PointD(mouseX, mouseY)-pos, ang);
 	ang = 0;
 	face->draw( pos, ang );
+	int w, h;
+	Image* cir = textToImage("●",fontSize,{255,0,0,255});
+	getImageSize( cir, w, h );
+	double r = size*2/w;
+	drawImage(cir, pos.x-r*w/2, pos.y-r*h/2, r, r);
+	cleanup(cir);
 }
 
 bool checkCollision( Object *a, Object *b )
@@ -249,7 +270,7 @@ class Board
 PointD posEnemy[10];
 int enemyNumber, imageNumber;
 
-Surface surfacePlayer, surfaceBullet, surfaceEnemy;
+Surface surfacePlayer, surfaceBullet, surfaceEnemy, surfaceEneBullet;
 int score;
 Player player;
 Bullet bulletNormal, bulletEnemy;
@@ -266,6 +287,7 @@ void loadPictures()
 	imageBullet = loadImage( "bullet.png"	);
 	imageEnemy	= loadImage( "player_u.png" );
 	imageEneBullet = loadImage( "etama.png" );
+	images[0] = textToImage("●");
 }
 
 void initialize()
@@ -279,19 +301,29 @@ void initialize()
 	bulletSize = 3;
 	//Init surface
 	surfacePlayer = Surface( imagePlayer, 0.5 );
+	setImageAlpha( imageBullet, 100 );
 	surfaceBullet = Surface( imageBullet, bulletSize);
+	surfaceEneBullet = Surface( images[0], 1 );
 	surfaceEnemy  = Surface( imageEnemy , 0.5 );
 	//Initialize vairables
 	player.face = &surfacePlayer;
 	player.pos = PointD( SCREEN_WIDTH/2, SCREEN_HEIGHT/2 );
-	player.size = 5;
+	player.size = 10;
 	player.hp = 5;
+	player.mp.setMax(3);
+	player.bombCD.setMax(1);
+	player.mp.use();
 	player.maxSpeed = player.speed = 5;
 
 	bulletNormal.face = &surfaceBullet;
 	bulletNormal.size = bulletSize;
-	bulletNormal.speed = bulletNormal.maxSpeed = 5;
+	bulletNormal.speed = bulletNormal.maxSpeed = 15;
 	bulletNormal.damage = 1;
+
+	bulletEnemy.face = &surfaceEneBullet;
+	bulletEnemy.size = 3;
+	bulletEnemy.speed = bulletEnemy.maxSpeed = 3;
+	bulletEnemy.damage = 1;
 
 
 	//posEnemy[0] = posPlayer;
@@ -300,6 +332,7 @@ void initialize()
 	enemyNormal.maxSpeed = 7;
 	enemyNormal.size = 10;
 	enemyNormal.hp = 1;
+	enemyNormal.bulCD.setMax(0.4);
 
 	enemyNumber = 1;
 
@@ -328,7 +361,7 @@ void drawBackground()
 }
 void drawHint()
 {
-	std::string hint, sHint;
+	std::string hint, sHint, bHint;
 	char tmp[100];
 	sprintf(tmp,"%d",score);
 	sHint = "Score:" + std::string(tmp);
@@ -341,21 +374,30 @@ void drawHint()
 		int hp_i = (int)(player.hp+0.5);
 		for( int i=0; i<hp_i; ++i )
 			hint = hint + "♥";
+		bHint = "Bomb:";
+		hp_i = (int)(player.mp.t()+0.5);
+		for( int i=0; i<hp_i; ++i )
+			bHint = bHint + "◆";
 	}
 
 	Image *text = textToImage( hint ),
-		  *text2 =textToImage( sHint );
+		  *text2 =textToImage( sHint ),
+		  *textB =textToImage( bHint );
 	int w,h;
 	getImageSize( text, w, h );
 	drawImage( text, 30, SCREEN_HEIGHT-h );
 	getImageSize( text2, w, h );
 	drawImage( text2, SCREEN_WIDTH-w-30, SCREEN_HEIGHT-h );
-	cleanup( text, text2 );
+	getImageSize( textB, w, h );
+	drawImage( textB, 30, SCREEN_HEIGHT-h*2 );
+	cleanup( text, text2, textB );
 }
 void drawBullet()
 {
 	//std::cout << "Size: " << bullets.size() << std::endl;
 	for(auto i : bullets )
+		i->draw();
+	for(auto i : eBullets)
 		i->draw();
 }
 void drawEnemy()
@@ -372,13 +414,31 @@ void draw()
 	drawEnemy();
 	drawHint();
 }
+
+void clearEnemy()
+{
+	while(!enemies.empty())
+	{
+		delete enemies.front();
+		enemies.pop_front();
+	}
+}
+void clearEneBullet()
+{
+	while(!eBullets.empty())
+	{
+		delete eBullets.front();
+		eBullets.pop_front();
+	}
+}
+
 uint64_t lastGenBullet = 0;
 void genBullet()
 {
 	double t = duration_i;
-	if( mouse[MOUSE_LEFT] )
+	if( mouse[MOUSE_LEFT] || keyboard['z'] )
 	{
-		if(duration_i - lastGenBullet > 30)
+		if(duration_i - lastGenBullet > 10)
 		{
 			lastGenBullet = duration_i;
 			PointD e = PointD(0,-1).rotate(player.ang/180*M_PI), te;
@@ -409,6 +469,27 @@ void genBullet()
 			bullets.push_back( bul );
 		}
 	}
+	if( player.bombCD.mv(0) && !player.mp.mv(0) && ( mouse[MOUSE_RIGHT] || keyboard['x'] ) )
+	{
+		clearEneBullet();
+		player.bombCD.use();
+		player.mp.mv(1);
+	}
+}
+void genEneBullet()
+{
+	for( auto i : enemies )
+	if( i->alive && i->bulCD.mv() ){
+		i->bulCD.use();
+		PointD e = player.pos - i->pos;
+
+		e = e/e.length();
+		Bullet *bul = new Bullet(bulletEnemy);
+		bul->pos = i->pos;
+		bul->velocity = e*bul->speed;
+		bul->ang = 0;
+		eBullets.push_back(bul);
+	}
 }
 
 void updateBullet()
@@ -432,6 +513,28 @@ void updateBullet()
 	while( !tmp.empty() )
 	{
 		bullets.push_back( tmp.front() );
+		tmp.pop_front();
+	}
+
+	//std::deque<Bullet*>tmp;
+	while( !eBullets.empty() )
+	{
+		Bullet *bul = eBullets.front();
+		eBullets.pop_front();
+
+		if(!bul->alive)
+		{
+			delete bul;
+			continue;
+		}
+
+		bul->update();
+
+		tmp.push_back(bul);
+	}
+	while( !tmp.empty() )
+	{
+		eBullets.push_back( tmp.front() );
 		tmp.pop_front();
 	}
 }
@@ -489,7 +592,7 @@ void genEnemy()
 		Enemy *ene;
 		ene = new Enemy(enemyNormal);
 		ene->pos = PointD(rand()%1000/1000.0*SCREEN_WIDTH,
-						  rand()%1000/1000.0*(SCREEN_HEIGHT*0.3));
+						  rand()%1000/1000.0*(SCREEN_HEIGHT*0.1));
 		//std::cout << ene->pos.x << " " <<ene->pos.y << std::endl;
 		enemies.push_back(ene);
 	}
@@ -516,29 +619,52 @@ void destoryEnemy()
 	}
 
 }
+void updatePlayer()
+{
+	player.update();
+
+	//limit in screen
+	if( player.pos.x < 0)
+		player.pos.x = 0;
+	if( player.pos.x > SCREEN_WIDTH )
+		player.pos.x = SCREEN_WIDTH;
+	if(player.pos.y < 0)
+		player.pos.x = 0;
+	if(player.pos.y > SCREEN_HEIGHT )
+		player.pos.y = SCREEN_HEIGHT;
+}
+
 short lastHit;
 void destoryPlayer()
 {
-
+	bool hit = false;
 	for(auto i : enemies)
-	if(checkCollision(i ,&player) && i->alive)
+	if(!hit && checkCollision(i ,&player) && i->alive && player.alive)
 	{
 		if(duration_i - lastHit > 10)
 		{
 			lastHit = duration_i;
 			player.hit(1);
-			i->alive=false;
+			i->alive = false;
+			hit = true;
 		}
 	}
 	for(auto i : eBullets)
-	if(checkCollision(i ,&player) && i->alive)
+	if(!hit && checkCollision(i ,&player) && i->alive && player.alive)
 	{
 		if(duration_i - lastHit > 10)
 		{
 			lastHit = duration_i;
-			player.hit(1);
-			i->alive=false;
+			player.hit(i->damage);
+			i->alive = false;
+			hit = true;
 		}
+	}
+	if(hit)
+	{
+		clearEnemy();
+		clearEneBullet();
+		player.mp.use();
 	}
 }
 int lastScore;
@@ -552,10 +678,11 @@ void deal()
 
 
 	updateBullet();
-	player.update();
+	updatePlayer();
 	updateEnemy();
 
 	genBullet();
+	genEneBullet();
 	genEnemy();
 
 
@@ -564,13 +691,39 @@ void deal()
 	destoryPlayer();
 }
 
+void endTitle()
+{
+	std::string hint, sHint;
+	char tmp[100];
+	sprintf(tmp,"%d",score);
+	sHint = "Score:" + std::string(tmp);
+	hint = "-Game Over-";
+
+
+	Image *text = textToImage( hint, fontSize*2 ),
+		  *text2 =textToImage( sHint, fontSize*2 );
+	int w,h;
+	getImageSize( text, w, h );
+	drawImage( text, SCREEN_WIDTH/2-w/2, SCREEN_HEIGHT/2-h );
+	getImageSize( text2, w, h );
+	drawImage( text2, SCREEN_WIDTH/2-w/2, SCREEN_HEIGHT/2+h );
+	cleanup( text, text2 );
+}
+
 int work( bool &quit )
 {
-	//Calculate sth.
-	deal();
+	if( player.hp > 1e-7 )
+	{
+		//Calculate sth.
+		deal();
 
-	//Draw on the screen
-	draw();
+		//Draw on the screen
+		draw();
+	}else
+	{
+		endTitle();
+	}
+
 
 	if( keyboard[KEY_ESC] )
 		quit = true;

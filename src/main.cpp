@@ -144,11 +144,12 @@ void Enemy::update(const PointD &ae)
 {
 	velocity = velocity + ae*speed;
 	move();
-	ang = getAngle(ae, ang);
+	//ang = getAngle(ae, ang);
 }
 
 void Enemy::draw()
 {
+	ang = getAngle(velocity, ang);
 	face->draw( pos, ang );
 }
 
@@ -253,7 +254,7 @@ void initialize()
 
 	bulletNormal.face = &surfaceBullet;
 	bulletNormal.size = bulletSize;
-	bulletNormal.speed = bulletNormal.maxSpeed = 10;
+	bulletNormal.speed = bulletNormal.maxSpeed = 5;
 	bulletNormal.damage = 1;
 
 

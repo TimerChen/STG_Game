@@ -3,12 +3,12 @@
 #include <cstdio>
 #include <map>
 
-namespace Game {
+using namespace Game;
 
 
-const int SCREEN_WIDTH	= 640;
-const int SCREEN_HEIGHT	= 480;
-const std::string TitleName = "A Simple Game Deemo";
+const int Game::SCREEN_WIDTH	= 640;
+const int Game::SCREEN_HEIGHT	= 480;
+const std::string Game::TitleName = "A Simple Game Demo";
 
 std::map<int, bool> keyboard;
 
@@ -69,6 +69,7 @@ void drawHint()
 	int w,h;
 	getImageSize( text, w, h );
 	drawImage( text, SCREEN_WIDTH/2-w/2, SCREEN_HEIGHT-h );
+	cleanup(text);
 }
 void drawBullet()
 {
@@ -178,4 +179,3 @@ void finale()
 		cleanup( images[i] );
 }
 
-}

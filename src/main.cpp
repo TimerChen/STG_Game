@@ -7,7 +7,7 @@
 
 
 const int Game::SCREEN_WIDTH	= 640;
-const int Game::SCREEN_HEIGHT	= 480;
+const int Game::SCREEN_HEIGHT	= 700;//480
 const std::string Game::TitleName = "A Simple Game Demo";
 
 using namespace Game;
@@ -22,6 +22,7 @@ private:
 public:
 	Image *img;
 	double size_r;
+	Rect *rect;
 
 	Surface( Image* IMG = NULL, double SIZE_R = 1 );
 	~Surface();
@@ -45,6 +46,32 @@ Surface::~Surface()
 	//cleanup( pic );
 }
 //----------object.h--------------
+class CD
+{
+private:
+	double left, cdMax;
+public:
+	CD( double M=0 ){left=M;cdMax=0;}
+
+	void setMax( double M )
+	{cdMax = M;left = 0;}
+	void use()
+	{left=cdMax;}
+
+	double t()
+	{return left;}
+
+	bool mv(double t=1./FPS_RATE)
+	{
+		if( cdMax < -1e-7 )
+			return false;
+		left-=t;
+		if( left < 1e-7 )
+			return true;
+		return false;
+	}
+};
+
 class Object
 {
 public:
@@ -63,6 +90,8 @@ bool checkCollision(Object *a, Object *b);
 class Bullet : public Object
 {
 public:
+	//destory_CD
+	CD desCD;
 	double damage;
 	void update();
 	void draw();
@@ -72,6 +101,7 @@ class Creature : public Object
 {
 protected:
 public:
+	CD damCD, bulCD;
 	double hp;
 
 public:
@@ -123,10 +153,14 @@ void Object::move( double duration )
 }
 void Bullet::update()
 {
+	if(!alive) return;
+
+	desCD.mv();
 	move();
 }
 void Bullet::draw()
 {
+	if(!alive) return;
 	face->draw( pos, ang );
 
 }
@@ -149,7 +183,8 @@ void Enemy::update(const PointD &ae)
 
 void Enemy::draw()
 {
-	ang = getAngle(velocity, ang);
+	//ang = getAngle(velocity, ang);
+	ang = -180;
 	face->draw( pos, ang );
 }
 
@@ -192,8 +227,8 @@ void Player::draw()
 {
 
 	//ang = getAngle(velocity, ang);
-	ang = getAngle(PointD(mouseX, mouseY)-pos, ang);
-
+	//ang = getAngle(PointD(mouseX, mouseY)-pos, ang);
+	ang = 0;
 	face->draw( pos, ang );
 }
 
@@ -217,19 +252,20 @@ int enemyNumber, imageNumber;
 Surface surfacePlayer, surfaceBullet, surfaceEnemy;
 int score;
 Player player;
-Bullet bulletNormal;
+Bullet bulletNormal, bulletEnemy;
 Enemy enemyNormal;
 double bulletSize;
 std::deque<Enemy*> enemies;
-std::deque<Bullet*> bullets;
+std::deque<Bullet*> bullets, eBullets;
 
-Image *imagePlayer, *imageBullet, *imageEnemy, *images[100];
+Image *imagePlayer, *imageBullet, *imageEnemy, *imageEneBullet, *images[100];
 
 void loadPictures()
 {
 	imagePlayer = loadImage( "player.png"	);
 	imageBullet = loadImage( "bullet.png"	);
 	imageEnemy	= loadImage( "player_u.png" );
+	imageEneBullet = loadImage( "etama.png" );
 }
 
 void initialize()
@@ -411,6 +447,15 @@ void destoryBullet()
 		i->alive = false;
 	}
 
+	for( auto i : eBullets )
+	if( i->pos.x < 0-i->size*2 ||
+		i->pos.x > SCREEN_WIDTH+i->size*2 ||
+		i->pos.y < 0-i->size*2 ||
+		i->pos.y > SCREEN_HEIGHT+i->size*2)
+	{
+		i->alive = false;
+	}
+
 }
 
 void updateEnemy()
@@ -444,7 +489,7 @@ void genEnemy()
 		Enemy *ene;
 		ene = new Enemy(enemyNormal);
 		ene->pos = PointD(rand()%1000/1000.0*SCREEN_WIDTH,
-						  rand()%1000/1000.0*SCREEN_HEIGHT);
+						  rand()%1000/1000.0*(SCREEN_HEIGHT*0.3));
 		//std::cout << ene->pos.x << " " <<ene->pos.y << std::endl;
 		enemies.push_back(ene);
 	}
@@ -452,6 +497,15 @@ void genEnemy()
 
 void destoryEnemy()
 {
+	for(auto i : enemies)
+	if( i->pos.x < 0-i->size*2 ||
+		i->pos.x > SCREEN_WIDTH+i->size*2 ||
+		i->pos.y < 0-i->size*2 ||
+		i->pos.y > SCREEN_HEIGHT+i->size*2)
+	{
+		i->alive = false;
+	}
+
 	for(auto i : enemies)
 	for(auto j : bullets)
 	if(checkCollision( i, j ) && i->alive && j->alive)
@@ -467,7 +521,17 @@ void destoryPlayer()
 {
 
 	for(auto i : enemies)
-	if(checkCollision(i ,&player))
+	if(checkCollision(i ,&player) && i->alive)
+	{
+		if(duration_i - lastHit > 10)
+		{
+			lastHit = duration_i;
+			player.hit(1);
+			i->alive=false;
+		}
+	}
+	for(auto i : eBullets)
+	if(checkCollision(i ,&player) && i->alive)
 	{
 		if(duration_i - lastHit > 10)
 		{
